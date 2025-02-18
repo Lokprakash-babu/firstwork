@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { Table, Button, Empty } from "antd";
 import { useRouter } from "next/navigation";
-import CreateForm from "./FormBuilder/CreateForm";
 
 interface Form {
   id: number;
@@ -38,15 +37,25 @@ const FormList = () => {
     {
       title: "Action",
       key: "action",
-      render: (_: any, record: Form) => (
-        <Button
-          type="link"
-          onClick={() => {
-            router.push(`/form/builder/${record.id}`);
-          }}
-        >
-          Edit
-        </Button>
+      render: (_, record: Form) => (
+        <div>
+          <Button
+            type="link"
+            onClick={() => {
+              router.push(`/form/builder/${record.id}`);
+            }}
+          >
+            Edit
+          </Button>
+          <Button
+            type="link"
+            onClick={() => {
+              router.push(`/form/preview/${record.id}`);
+            }}
+          >
+            Preview
+          </Button>
+        </div>
       ),
     },
   ];
