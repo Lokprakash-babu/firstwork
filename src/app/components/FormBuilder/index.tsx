@@ -80,7 +80,7 @@ const FormBuilder = ({ formId }: { formId: string }) => {
       toast.success("Form saved successfully");
     };
 
-    const debounceTimeout = setTimeout(handleAutoSave, 2000); // 2-second debounce period
+    const debounceTimeout = setTimeout(handleAutoSave, 5000); // 5-second debounce period
 
     return () => clearTimeout(debounceTimeout);
   }, [formSchema]);

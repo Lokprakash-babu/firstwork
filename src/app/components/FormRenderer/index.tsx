@@ -20,21 +20,29 @@ const FormRenderer = ({ formId }: { formId: string }) => {
       setFormField(form);
       setLoading(false);
     });
-  }, []);
+  }, [formId]);
 
   if (loading) {
     return <Spin />;
   }
   return (
     <div className="min-w-[40%]">
-      <Button
-        className="flex mb-5"
-        onClick={() => {
-          router.push(`/form/builder/${formId}`);
-        }}
-      >
-        Edit this Form
-      </Button>
+      <div className="flex justify-between mb-5">
+        <Button
+          onClick={() => {
+            router.push(`/form/builder/${formId}`);
+          }}
+        >
+          Edit this Form
+        </Button>
+        <Button
+          onClick={() => {
+            router.push("/form");
+          }}
+        >
+          Back to Form
+        </Button>
+      </div>
       {formField.length === 0 ? (
         <Empty description="Oh No! Your form is empty" />
       ) : (
