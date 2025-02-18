@@ -1,4 +1,5 @@
 import CreateForm from "../components/FormBuilder/CreateForm";
+import FormList from "../components/FormList";
 
 const FormPage = () => {
   return (
@@ -6,7 +7,7 @@ const FormPage = () => {
       <div className="flex w-full justify-center p-5">
         <CreateForm />
       </div>
-      <p>Coming soon! Table to show the list of created forms</p>
+      <FormList />
     </div>
   );
 };

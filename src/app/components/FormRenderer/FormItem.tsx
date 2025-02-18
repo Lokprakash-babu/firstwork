@@ -1,7 +1,7 @@
-import { Form, Input } from "antd";
+import { Form, Input, Select } from "antd";
 
 import { Rule } from "antd/lib/form";
-import { IFormItemValidations } from "../FormBuilder";
+import { IFormItemValidations, TFormElementType } from "../FormBuilder";
 
 const convertValidationsToArray = (
   validations: IFormItemValidations
@@ -48,17 +48,45 @@ interface IFormItem {
   label: string;
   placeholder: string;
   validations?: IFormItemValidations;
+  type: TFormElementType;
+  options?: { label: string; value: string }[];
 }
-const FormItem = ({ label, placeholder, validations = {} }: IFormItem) => {
+const FormItem = ({
+  label,
+  placeholder,
+  validations = {},
+  type,
+  options = [],
+}: IFormItem) => {
+  const renderFormItem = () => {
+    switch (type) {
+      case "text":
+        return <Input placeholder={placeholder} />;
+      case "number":
+        return <Input type="number" placeholder={placeholder} />;
+      case "select":
+        return (
+          <Select placeholder={placeholder}>
+            {options.map((option) => (
+              <Select.Option key={option.value} value={option.value}>
+                {option.label}
+              </Select.Option>
+            ))}
+          </Select>
+        );
+      default:
+        return <Input placeholder={placeholder} />;
+    }
+  };
+
   return (
     <Form.Item
       name={label}
       rules={convertValidationsToArray(validations)}
       label={label}
     >
-      <Input placeholder={placeholder} />
+      {renderFormItem()}
     </Form.Item>
   );
 };
-
 export default FormItem;

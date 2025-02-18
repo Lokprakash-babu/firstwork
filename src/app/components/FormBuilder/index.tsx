@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import QuestionItem from "./QuestionItem";
-import { Button, Spin } from "antd";
+import { Button, Spin, Empty } from "antd";
 import { useRouter } from "next/navigation";
 import { fetchFormSchema } from "@/app/lib/fetchFormSchema";
 import toast from "react-hot-toast";
@@ -20,6 +20,7 @@ export interface IFormElement {
   type: TFormElementType;
   placeholder: string;
   validations?: IFormItemValidations;
+  options?: { label: string; value: string }[];
 }
 const FormBuilder = ({ formId }: { formId: string }) => {
   const [formSchema, setFormSchema] = useState<IFormElement[]>([]);
@@ -27,11 +28,11 @@ const FormBuilder = ({ formId }: { formId: string }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [previewLoading, setPreviewLoading] = useState<boolean>(false);
   const [activeQuestion, setActiveQuestion] = useState<number | null>(null);
+
   const addQuestion = () => {
     const questionId = Date.now();
     setFormSchema([
       ...formSchema,
-
       { id: questionId, label: "", type: "text", placeholder: "" },
     ]);
     setActiveQuestion(questionId);
@@ -71,23 +72,23 @@ const FormBuilder = ({ formId }: { formId: string }) => {
       setFormSchema(form);
       setLoading(false);
     });
-  }, []);
+  }, [formId]);
 
-  useEffect(
-    function autoSave() {
-      const interval = setInterval(() => {
-        saveQuestionToLocalStorage();
-        toast.success("Form saved successfully");
-      }, 10000);
+  useEffect(() => {
+    const handleAutoSave = () => {
+      saveQuestionToLocalStorage();
+      toast.success("Form saved successfully");
+    };
 
-      return () => clearInterval(interval);
-    },
-    [formSchema]
-  );
+    const debounceTimeout = setTimeout(handleAutoSave, 2000); // 2-second debounce period
+
+    return () => clearTimeout(debounceTimeout);
+  }, [formSchema]);
 
   if (loading) {
     return <Spin />;
   }
+
   return (
     <div className="min-w-[80%] lg:min-w-[50%]">
       <div className="flex justify-between">
@@ -118,17 +119,25 @@ const FormBuilder = ({ formId }: { formId: string }) => {
         </div>
       </div>
       <div className="min-w-1/2">
-        {formSchema.map((question) => (
-          <QuestionItem
-            key={question.id}
-            deleteQuestion={deleteQuestion}
-            formSchema={formSchema}
-            question={question}
-            setFormSchema={setFormSchema}
-            isQuestionActive={activeQuestion === question.id}
-            setActiveQuestion={setActiveQuestion}
-          />
-        ))}
+        {formSchema.length === 0 ? (
+          <Empty description="No questions added yet">
+            <Button type="primary" onClick={addQuestion}>
+              Add Question
+            </Button>
+          </Empty>
+        ) : (
+          formSchema.map((question) => (
+            <QuestionItem
+              key={question.id}
+              deleteQuestion={deleteQuestion}
+              formSchema={formSchema}
+              question={question}
+              setFormSchema={setFormSchema}
+              isQuestionActive={activeQuestion === question.id}
+              setActiveQuestion={setActiveQuestion}
+            />
+          ))
+        )}
       </div>
     </div>
   );

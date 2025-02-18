@@ -20,12 +20,10 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
   setActiveQuestion,
 }) => {
   const [error, setError] = useState<string | null>(null);
+  const [newOption, setNewOption] = useState<string>("");
+  const [optionError, setOptionError] = useState<string | null>(null);
 
   const validateMinMax = (min: number, max: number) => {
-    if (!max) {
-      setError("");
-      return;
-    }
     if (min > max) {
       setError("Max value should be greater than Min value");
     } else {
@@ -34,15 +32,52 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
   };
 
   const validateMinMaxLength = (minLength: number, maxLength: number) => {
-    if (!maxLength) {
-      setError("");
-      return;
-    }
     if (minLength > maxLength) {
       setError("Max Length should be greater than Min Length");
     } else {
       setError(null);
     }
+  };
+
+  const addOption = () => {
+    if (newOption.trim() === "") {
+      setOptionError("Option cannot be empty");
+      return;
+    }
+    if (question.options?.some((option) => option.value === newOption)) {
+      setOptionError("Option already exists");
+      return;
+    }
+    setFormSchema(
+      formSchema.map((q) =>
+        q.id === question.id
+          ? {
+              ...q,
+              options: [
+                ...(q.options || []),
+                { label: newOption, value: newOption },
+              ],
+            }
+          : q
+      )
+    );
+    setNewOption("");
+    setOptionError(null);
+  };
+
+  const deleteOption = (optionValue: string) => {
+    setFormSchema(
+      formSchema.map((q) =>
+        q.id === question.id
+          ? {
+              ...q,
+              options: q.options?.filter(
+                (option) => option.value !== optionValue
+              ),
+            }
+          : q
+      )
+    );
   };
 
   const deleteButton = () => {
@@ -98,46 +133,50 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
             />
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-4 mb-4">
-            <Select
-              className="flex-1"
-              placeholder="Select a type"
-              options={[
-                {
-                  value: "text",
-                  label: "Text",
-                },
-                { value: "number", label: "Number" },
-                { value: "select", label: "Select" },
-              ]}
-              value={question.type}
-              onChange={(value) => {
-                setFormSchema(
-                  formSchema.map((q) =>
-                    q.id === question.id ? { ...q, type: value } : q
-                  )
-                );
-              }}
-            ></Select>
-            <Checkbox
-              className="flex items-center w-[40%]"
-              onChange={(e) => {
-                const value = e.target.checked;
-                setFormSchema(
-                  formSchema.map((q) =>
-                    q.id === question.id
-                      ? {
-                          ...q,
-                          validations: { ...q.validations, required: value },
-                        }
-                      : q
-                  )
-                );
-              }}
-              checked={question.validations?.required}
-            >
-              <p>Required</p>
-            </Checkbox>
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-4">
+            <div className="flex-1">
+              <label>Type</label>
+              <Select
+                className="w-full"
+                placeholder="Select a type"
+                options={[
+                  {
+                    value: "text",
+                    label: "Text",
+                  },
+                  { value: "number", label: "Number" },
+                  { value: "select", label: "Select" },
+                ]}
+                value={question.type}
+                onChange={(value) => {
+                  setFormSchema(
+                    formSchema.map((q) =>
+                      q.id === question.id ? { ...q, type: value } : q
+                    )
+                  );
+                }}
+              ></Select>
+            </div>
+            <div className="flex items-center w-[40%]">
+              <Checkbox
+                onChange={(e) => {
+                  const value = e.target.checked;
+                  setFormSchema(
+                    formSchema.map((q) =>
+                      q.id === question.id
+                        ? {
+                            ...q,
+                            validations: { ...q.validations, required: value },
+                          }
+                        : q
+                    )
+                  );
+                }}
+                checked={question.validations?.required}
+              >
+                <p>Required</p>
+              </Checkbox>
+            </div>
           </div>
 
           {question.type !== "select" && (
@@ -236,6 +275,38 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
                   );
                 }}
               />
+            </div>
+          )}
+          {question.type === "select" && (
+            <div className="flex flex-col gap-4 mb-4">
+              <div className="flex gap-4">
+                <Input
+                  type="text"
+                  placeholder="Option"
+                  value={newOption}
+                  onChange={(e) => setNewOption(e.target.value)}
+                />
+                <Button type="primary" onClick={addOption}>
+                  Add Option
+                </Button>
+              </div>
+              {optionError && <p className="text-red-500">{optionError}</p>}
+              <div>
+                {question.options?.map((option) => (
+                  <div
+                    key={option.value}
+                    className="flex justify-between items-center mb-2"
+                  >
+                    <span>{option.label}</span>
+                    <Button
+                      type="link"
+                      onClick={() => deleteOption(option.value)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           {error && <p className="text-red-500">{error}</p>}
