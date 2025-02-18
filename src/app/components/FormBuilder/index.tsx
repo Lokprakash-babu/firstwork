@@ -108,7 +108,7 @@ const FormBuilder = ({ formId }: { formId: string }) => {
           <Button
             type="text"
             onClick={() => {
-              handlePreview();
+              handlePreview(false);
               router.push("/form");
             }}
             disabled={previewLoading}
