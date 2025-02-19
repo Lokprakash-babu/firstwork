@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import QuestionItem from "./QuestionItem";
-import { Button, Spin, Empty } from "antd";
+import { Button, Spin, Empty, Tooltip } from "antd";
 import { useRouter } from "next/navigation";
 import { fetchFormSchema } from "@/app/lib/fetchFormSchema";
 import toast from "react-hot-toast";
@@ -20,15 +20,19 @@ export interface IFormElement {
   type: TFormElementType;
   placeholder: string;
   validations?: IFormItemValidations;
+  defaultValue?: string;
   options?: { label: string; value: string }[];
 }
+
 const FormBuilder = ({ formId }: { formId: string }) => {
   const [formSchema, setFormSchema] = useState<IFormElement[]>([]);
+  const [errors, setErrors] = useState<{ [key: number]: string }>({});
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
   const [previewLoading, setPreviewLoading] = useState<boolean>(false);
   const [activeQuestion, setActiveQuestion] = useState<number | null>(null);
 
+  // Add a new question to the form schema
   const addQuestion = () => {
     const questionId = Date.now();
     setFormSchema([
@@ -38,6 +42,7 @@ const FormBuilder = ({ formId }: { formId: string }) => {
     setActiveQuestion(questionId);
   };
 
+  // Delete a question from the form schema
   const deleteQuestion = (id: number) => {
     setFormSchema(formSchema.filter((question) => question.id !== id));
     setActiveQuestion(
@@ -45,10 +50,12 @@ const FormBuilder = ({ formId }: { formId: string }) => {
     );
   };
 
+  // Save the form schema to local storage
   const saveQuestionToLocalStorage = () => {
     localStorage.setItem(formId, JSON.stringify(formSchema));
   };
 
+  // Save the form schema with a delay
   const saveQuestion = () => {
     return new Promise<void>((resolve) => {
       setTimeout(() => {
@@ -58,6 +65,7 @@ const FormBuilder = ({ formId }: { formId: string }) => {
     });
   };
 
+  // Handle the preview action
   const handlePreview = async (withRouting = true) => {
     setPreviewLoading(true);
     await saveQuestion();
@@ -67,6 +75,58 @@ const FormBuilder = ({ formId }: { formId: string }) => {
     }
   };
 
+  // Validate the form schema
+  const validateFormSchema = () => {
+    const newErrors: { [key: number]: string } = {};
+    formSchema.forEach((question) => {
+      if (!question.label) {
+        newErrors[question.id] = "Label is required";
+      }
+      if (question.validations?.required && !question.defaultValue) {
+        newErrors[question.id] = "This field is required";
+      }
+      if (
+        question.type === "number" &&
+        question.defaultValue &&
+        question.validations?.min !== undefined &&
+        parseFloat(question.defaultValue) < question.validations.min
+      ) {
+        newErrors[question.id] = `Minimum value is ${question.validations.min}`;
+      }
+      if (
+        question.type === "number" &&
+        question.defaultValue &&
+        question.validations?.max !== undefined &&
+        parseFloat(question.defaultValue) > question.validations.max
+      ) {
+        newErrors[question.id] = `Maximum value is ${question.validations.max}`;
+      }
+      if (
+        question.type === "text" &&
+        question.defaultValue &&
+        question.validations?.minLength !== undefined &&
+        question.defaultValue.length < question.validations.minLength
+      ) {
+        newErrors[
+          question.id
+        ] = `Minimum length is ${question.validations.minLength}`;
+      }
+      if (
+        question.type === "text" &&
+        question.defaultValue &&
+        question.validations?.maxLength !== undefined &&
+        question.defaultValue.length > question.validations.maxLength
+      ) {
+        newErrors[
+          question.id
+        ] = `Maximum length is ${question.validations.maxLength}`;
+      }
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Fetch the form schema on component mount
   useEffect(() => {
     fetchFormSchema(formId).then((form) => {
       setFormSchema(form);
@@ -74,6 +134,12 @@ const FormBuilder = ({ formId }: { formId: string }) => {
     });
   }, [formId]);
 
+  // Validate the form schema whenever it changes
+  useEffect(() => {
+    validateFormSchema();
+  }, [formSchema]);
+
+  // Auto-save the form schema with a debounce
   useEffect(() => {
     const handleAutoSave = () => {
       saveQuestionToLocalStorage();
@@ -89,6 +155,8 @@ const FormBuilder = ({ formId }: { formId: string }) => {
     return <Spin />;
   }
 
+  const hasErrors = Object.keys(errors).length > 0;
+
   return (
     <div className="min-w-[80%] lg:min-w-[50%]">
       <div className="flex justify-between">
@@ -97,15 +165,27 @@ const FormBuilder = ({ formId }: { formId: string }) => {
         </Button>
 
         <div className="mb-4">
-          <Button
-            type="text"
-            onClick={() => handlePreview()}
-            loading={previewLoading}
-            className="font-semibold text-blue-800"
-            disabled={previewLoading}
+          <Tooltip
+            title={
+              hasErrors
+                ? "One of your form fields is invalid or label is missing. Ensure that form fields are valid and label is provided for all the fields."
+                : ""
+            }
           >
-            Preview
-          </Button>
+            <Button
+              type="text"
+              onClick={() => {
+                if (validateFormSchema()) {
+                  handlePreview();
+                }
+              }}
+              loading={previewLoading}
+              className="font-semibold text-blue-800"
+              disabled={previewLoading || hasErrors}
+            >
+              Preview
+            </Button>
+          </Tooltip>
           <Button
             type="text"
             onClick={() => {

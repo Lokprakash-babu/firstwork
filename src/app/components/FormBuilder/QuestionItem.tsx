@@ -1,6 +1,6 @@
 import { Button, Checkbox, Collapse, Input, Select } from "antd";
 import { IFormElement } from "./index";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface QuestionItemProps {
   question: IFormElement;
@@ -22,8 +22,15 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [newOption, setNewOption] = useState<string>("");
   const [optionError, setOptionError] = useState<string | null>(null);
+  const [defaultValueError, setDefaultValueError] = useState<string | null>(
+    null
+  );
 
   const validateMinMax = (min: number, max: number) => {
+    if (!max) {
+      setError("");
+      return;
+    }
     if (min > max) {
       setError("Max value should be greater than Min value");
     } else {
@@ -32,12 +39,89 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
   };
 
   const validateMinMaxLength = (minLength: number, maxLength: number) => {
+    if (!maxLength) {
+      setError("");
+      return;
+    }
     if (minLength > maxLength) {
       setError("Max Length should be greater than Min Length");
     } else {
       setError(null);
     }
   };
+
+  const validateDefaultValue = (value: string) => {
+    if (!value) {
+      setDefaultValueError("");
+      return;
+    }
+    if (question.type === "number") {
+      const defaultValueNumber = parseFloat(value);
+      if (isNaN(defaultValueNumber)) {
+        setDefaultValueError("Default value must be a number");
+      } else if (
+        (question.validations?.min !== undefined &&
+          defaultValueNumber < question.validations.min) ||
+        (question.validations?.max !== undefined &&
+          defaultValueNumber > question.validations.max)
+      ) {
+        setDefaultValueError(
+          `Default value must be between ${
+            question.validations.min !== undefined
+              ? question.validations.min
+              : ""
+          } and ${
+            question.validations.max !== undefined
+              ? question.validations.max
+              : ""
+          }`
+        );
+      } else {
+        setDefaultValueError(null);
+      }
+    } else if (question.type === "text") {
+      const defaultValueLength = value.length;
+
+      if (
+        (question.validations?.minLength !== undefined &&
+          defaultValueLength < question.validations.minLength) ||
+        (question.validations?.maxLength !== undefined &&
+          defaultValueLength > question.validations.maxLength)
+      ) {
+        setDefaultValueError(
+          `Default value length must be between ${
+            question.validations.minLength !== undefined
+              ? question.validations.minLength
+              : ""
+          } and ${
+            question.validations.maxLength !== undefined
+              ? question.validations.maxLength
+              : ""
+          }`
+        );
+      } else {
+        setDefaultValueError(null);
+      }
+    } else if (question.type === "select") {
+      const isValidDefault = question.options?.some(
+        (option) => option.value === value
+      );
+      if (!isValidDefault) {
+        setDefaultValueError("Default value must be one of the options");
+      } else {
+        setDefaultValueError(null);
+      }
+    }
+  };
+
+  useEffect(() => {
+    validateDefaultValue(question.defaultValue || "");
+  }, [
+    question.defaultValue,
+    question.type,
+    question.validations,
+    question.options,
+  ]);
 
   const addOption = () => {
     if (newOption.trim() === "") {
@@ -309,6 +393,27 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
               </div>
             </div>
           )}
+          <div className="flex flex-col lg:flex-row gap-4 mb-4">
+            <Input
+              addonBefore={<>Default Value</>}
+              type={question.type === "number" ? "number" : "text"}
+              placeholder="Default Value"
+              value={question.defaultValue || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormSchema(
+                  formSchema.map((q) =>
+                    q.id === question.id ? { ...q, defaultValue: value } : q
+                  )
+                );
+                validateDefaultValue(value);
+              }}
+              className="flex-1"
+            />
+            {defaultValueError && (
+              <p className="text-red-500">{defaultValueError}</p>
+            )}
+          </div>
           {error && <p className="text-red-500">{error}</p>}
         </div>
       ),

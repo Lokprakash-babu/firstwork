@@ -1,5 +1,4 @@
 import { Form, Input, Select } from "antd";
-
 import { Rule } from "antd/lib/form";
 import { IFormItemValidations, TFormElementType } from "../FormBuilder";
 
@@ -14,32 +13,6 @@ const convertValidationsToArray = (
       message: "This field is required",
     });
   }
-  if (validations.min !== undefined) {
-    validationArray.push({
-      type: "number",
-      min: validations.min,
-      message: `Minimum value is ${validations.min}`,
-    });
-  }
-  if (validations.max !== undefined) {
-    validationArray.push({
-      type: "number",
-      max: validations.max,
-      message: `Maximum value is ${validations.max}`,
-    });
-  }
-  if (validations.minLength !== undefined) {
-    validationArray.push({
-      min: validations.minLength,
-      message: `Minimum length is ${validations.minLength}`,
-    });
-  }
-  if (validations.maxLength !== undefined) {
-    validationArray.push({
-      max: validations.maxLength,
-      message: `Maximum length is ${validations.maxLength}`,
-    });
-  }
 
   return validationArray;
 };
@@ -50,23 +23,41 @@ interface IFormItem {
   validations?: IFormItemValidations;
   type: TFormElementType;
   options?: { label: string; value: string }[];
+  defaultValue?: string;
 }
+
 const FormItem = ({
   label,
   placeholder,
   validations = {},
   type,
   options = [],
+  defaultValue = "",
 }: IFormItem) => {
   const renderFormItem = () => {
     switch (type) {
       case "text":
-        return <Input placeholder={placeholder} />;
+        return (
+          <Input
+            placeholder={placeholder}
+            defaultValue={defaultValue}
+            minLength={validations.minLength}
+            maxLength={validations.maxLength}
+          />
+        );
       case "number":
-        return <Input type="number" placeholder={placeholder} />;
+        return (
+          <Input
+            type="number"
+            placeholder={placeholder}
+            defaultValue={defaultValue}
+            min={validations.min}
+            max={validations.max}
+          />
+        );
       case "select":
         return (
-          <Select placeholder={placeholder}>
+          <Select placeholder={placeholder} defaultValue={defaultValue}>
             {options.map((option) => (
               <Select.Option key={option.value} value={option.value}>
                 {option.label}
@@ -75,7 +66,7 @@ const FormItem = ({
           </Select>
         );
       default:
-        return <Input placeholder={placeholder} />;
+        return <Input placeholder={placeholder} defaultValue={defaultValue} />;
     }
   };
 
@@ -89,4 +80,5 @@ const FormItem = ({
     </Form.Item>
   );
 };
+
 export default FormItem;
